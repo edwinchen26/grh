@@ -1,27 +1,27 @@
 <template>
   <div class="content">
-    <h1>Puestos de trabajo</h1>
+    <h1>Departamentos</h1>
     <section class="table">
-      <router-link tag="div" class="button" :to="{ path: 'add'}" append>Agregar puesto</router-link>
+      <router-link tag="div" class="button" :to="{ path: 'add'}" append>Agregar departamento</router-link>
       <div class="container">
         <div class="data heading">
-          <span>Puesto</span>
+          <span>Departamento</span>
           <span>Descripción</span>
-          <span>Beneficios</span>
-          <span>Remuneración</span>
+          <span>Presupuesto actual</span>
+          <span>Puestos</span>
         </div>
         <router-link
-          :to="{ path: `edit/${job.id}/${job.team}` }"
+          :to="{ path: `edit/${team.id}` }"
           tag="div"
           class="data"
-          v-for="job in jobs"
-          :key="job.id"
+          v-for="team in teams"
+          :key="team.id"
           append
         >
-          <span>{{ job.name }}</span>
-          <span>{{ job.description }}</span>
-          <span>{{ job.benefits.length }}</span>
-          <span>{{ job.totalRemuneration | toCurrency }}</span>
+          <span>{{ team.name }}</span>
+          <span>{{ team.description }}</span>
+          <span>{{ team.budget | toCurrency }}</span>
+          <span>{{ count[team.id] ? count[team.id] : '0' }}</span>
         </router-link>
       </div>
     </section>
@@ -33,10 +33,15 @@ import firebase from "../firebase";
 const firestore = firebase.firestore();
 
 export default {
-  name: "Jobs",
+  name: "Teams",
+  data() {
+    return {
+      count: {}
+    };
+  },
   firestore() {
     return {
-      jobs: firestore.collection("jobs").orderBy("name", "asc")
+      teams: firestore.collection("teams").orderBy("name", "asc")
     };
   },
   filters: {
@@ -51,6 +56,19 @@ export default {
       });
       return formatter.format(value);
     }
+  },
+  beforeCreate() {
+    let teams = [];
+
+    this.$binding("jobs", firestore.collection("jobs")).then(jobs => {
+      jobs.forEach(x => {
+        teams.push(x.team);
+      });
+
+      teams.forEach(i => {
+        this.count[i] = (this.count[i] || 0) + 1;
+      });
+    });
   }
 };
 </script>

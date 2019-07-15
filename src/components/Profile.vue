@@ -2,7 +2,7 @@
   <div class="profile">
     <div class="icon"></div>
     <div class="name">
-      Edwin Chen
+      Fernando Fernández
       <i class="fas fa-caret-down"></i>
     </div>
   </div>

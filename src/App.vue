@@ -24,7 +24,6 @@ export default {
 </script>
 
 <style>
-/* General styling */
 * {
   box-sizing: border-box;
   font: 400 16px/1em "Poppins", sans-serif;
@@ -61,7 +60,7 @@ header {
 body > .container {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(300px, auto) 2fr;
+  grid-template-columns: auto 2fr;
   grid-template-areas: "menuSection mainSection";
 }
 

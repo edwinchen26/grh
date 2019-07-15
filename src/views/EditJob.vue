@@ -36,12 +36,14 @@
               :id="team.id"
               name="selectTeam"
               @click="getTeamInfo(team.id)"
+              required="required"
             />
             <label :for="team.id">{{ team.name }}</label>
           </div>
           <div class="budget">
             <h2>Presupuesto disponible:</h2>
-            <span :class="{ overBudget: isOverBudget }">{{ this.tempBudget | toCurrency }}</span>
+            <span v-if="initialTeam.length == 0">{{ 0 | toCurrency }}</span>
+            <span v-else :class="{ overBudget: isOverBudget }">{{ this.tempBudget | toCurrency }}</span>
           </div>
         </div>
         <div class="benefits">
@@ -80,6 +82,7 @@
                 min="0"
                 step="any"
                 v-model.number="input.amount"
+                @keyup="budgetLeft()"
                 required="required"
                 autocomplete="off"
               />
@@ -106,7 +109,7 @@ export default {
     return {
       data: firestore.collection("jobs").doc(this.id),
       initialTeam: firestore.collection("teams").doc(this.team),
-      teams: firestore.collection("teams"),
+      teams: firestore.collection("teams").orderBy("name", "asc"),
       selectedTeam: firestore.collection("teams").doc(this.team),
       oldTeam: firestore.collection("teams").doc(this.team)
     };
@@ -137,9 +140,6 @@ export default {
       }
     );
   },
-  updated() {
-    this.budgetLeft();
-  },
   methods: {
     addInput() {
       this.inputs.push({
@@ -155,38 +155,44 @@ export default {
     },
     onSubmit() {
       const router = this.$router;
-      let totalRemuneration = 0;
-      this.inputs.forEach(item => {
-        totalRemuneration = totalRemuneration + parseInt(item.amount);
-      });
-      this.data.totalRemuneration = totalRemuneration;
-      this.data.team = this.selectedTeam.id;
 
-      // eslint-disable-next-line
-      const { benefits, ...newData } = this.data;
-
-      this.$firestore.data
-        .update({ ...newData, benefits: [...this.inputs] })
-        .then(function() {
-          router.push({ path: `/message/success/edit` });
-        })
-        .catch(function(error) {
-          console.error(error);
-          router.push({ path: `/message/failure/submit` });
+      if (this.tempBudget >= 0) {
+        let totalRemuneration = 0;
+        this.inputs.forEach(item => {
+          totalRemuneration = totalRemuneration + parseInt(item.amount);
         });
+        this.data.totalRemuneration = totalRemuneration;
+        this.data.team = this.selectedTeam.id;
 
-      if (this.initialTeam.id != this.selectedTeam.id) {
-        this.$firestore.initialTeam.update({
-          budget: this.initialTeam.budget + this.data.totalRemuneration
+        // eslint-disable-next-line
+        const { benefits, ...newData } = this.data;
+
+        this.$firestore.data
+          .update({ ...newData, benefits: [...this.inputs] })
+          .then(function() {
+            router.push({ path: `/message/success/edit` });
+          })
+          .catch(function(error) {
+            console.error(error);
+            router.push({ path: `/message/failure/submit` });
+          });
+
+        if (this.initialTeam.id != this.selectedTeam.id) {
+          this.$firestore.initialTeam.update({
+            budget: this.initialTeam.budget + this.data.totalRemuneration
+          });
+        }
+
+        this.$firestore.selectedTeam.update({
+          budget: this.tempBudget
         });
+      } else {
+        router.push({ path: `/message/failure/submit` });
       }
-
-      this.$firestore.selectedTeam.update({
-        budget: this.tempBudget
-      });
     },
     getTeamInfo(id) {
       this.$binding("selectedTeam", firestore.collection("teams").doc(id));
+      if (this.initialTeam.length == 0) this.initialTeam.push(".");
       setTimeout(() => {
         this.ed = Math.random();
         this.budgetLeft();
@@ -208,12 +214,15 @@ export default {
         this.tempBudget = totalBudget - tempRemuneration;
       }
 
-      this.isOverBudget = totalBudget - totalRemuneration < 0 ? true : false;
+      this.isOverBudget = totalBudget - tempRemuneration < 0 ? true : false;
       return this.tempBudget;
     },
     deleteJob(id) {
-      this.$router.push({ path: `/message/delete/${id}` });
+      this.$router.push({ path: `/message/delete-job/${id}` });
     }
+  },
+  updated() {
+    this.budgetLeft();
   },
   filters: {
     toCurrency: function(value) {

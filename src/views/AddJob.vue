@@ -109,22 +109,27 @@ export default {
       },
       tempBudget: 0,
       isOptionChanged: false,
+      isTeamSelected: false,
       isOverBudget: false,
       ed: 0
     };
   },
   firestore() {
     return {
-      teams: db.collection("teams")
+      teams: db.collection("teams").orderBy("name", "asc")
     };
   },
   methods: {
     addInput() {
-      this.inputs.push({
-        name: "",
-        description: "",
-        amount: ""
-      });
+      if (this.isTeamSelected) {
+        this.inputs.push({
+          name: "",
+          description: "",
+          amount: ""
+        });
+      } else {
+        alert("Seleccione un departamento");
+      }
     },
     deleteInput(index) {
       if (index == null) {
@@ -171,10 +176,6 @@ export default {
             console.error(error);
             router.push({ path: `/message/failure/submit` });
           });
-
-        this.jobName = "";
-        this.jobDescription = "";
-        this.inputs = [];
       } else {
         router.push({ path: `/message/failure/submit` });
       }
@@ -182,6 +183,7 @@ export default {
     getTeamInfo(id) {
       this.$binding("selectedTeam", db.collection("teams").doc(id));
       this.isOptionChanged = false;
+      this.isTeamSelected = true;
 
       setTimeout(() => {
         this.ed = Math.random();

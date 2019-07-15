@@ -29,35 +29,39 @@
     </section>
 
     <section class="listing">
-      <h2>Listado de puestos</h2>
-      <div class="box">POR LLENAR</div>
+      <h2>Listado por beneficios (10)</h2>
+      <div class="box">
+        <ol>
+          <li v-for="(job, index) in topGrossRemuneration" :key="index">{{ job.name }}</li>
+        </ol>
+      </div>
     </section>
 
     <section class="chart">
-      <h2>Gráfico de remuneraciones</h2>
-      <div class="chartContainer">
-        <div class="data" v-for="d in topRemuneration" :key="d.id">
-          <span class="name">{{ d.name }}</span>
-          <span
-            class="bar"
-            :style="{ width: (d.totalRemuneration / highestRemuneration) * 100 + '%'}"
-          ></span>
-          <span class="number">{{ d.totalRemuneration | toCurrency }}</span>
-        </div>
+      <h2>Gráfico general de remuneraciones</h2>
+      <div class="radio_button">
+        <input type="radio" id="default" value="default" v-model="selectedTeam" name="selectTeam" />
+        <label for="default">General</label>
       </div>
+      <div class="radio_button" v-for="team in teams" :key="team.id">
+        <input type="radio" :id="team.id" :value="team.id" v-model="selectedTeam" name="selectTeam" />
+        <label :for="team.id">{{ team.name }}</label>
+      </div>
+      <Chart :data="selectedTeam" />
     </section>
   </div>
 </template>
 
 <script>
 import Card from "../components/Card";
+import Chart from "../components/Chart";
 import firebase from "../firebase";
 
 const db = firebase.firestore();
 
 export default {
   name: "Home",
-  components: { Card },
+  components: { Card, Chart },
   mounted() {
     let size = this.jobsCounter;
     let averageBenefits = this.averageBenefits;
@@ -77,23 +81,26 @@ export default {
         this.jobsCounter = size;
         this.averageBenefits = averageBenefits;
         this.totalRemuneration = totalRemuneration;
-        this.highestRemuneration = this.topRemuneration[0].totalRemuneration;
       });
+
+    setTimeout(() => {
+      this.selectedTeam = "default";
+    }, 1000);
   },
   data() {
     return {
       jobsCounter: 0,
       averageBenefits: 0,
       totalRemuneration: 0,
-      highestRemuneration: 0
+      selectedTeam: ""
     };
   },
   firestore() {
     return {
-      topRemuneration: db
+      teams: db.collection("teams"),
+      topGrossRemuneration: db
         .collection("jobs")
         .orderBy("totalRemuneration", "desc")
-        .limit(10)
     };
   },
   filters: {
@@ -121,7 +128,6 @@ main > .content {
   grid-template-areas: "title title" "report listing" "chart listing";
 }
 
-/* Section: reports */
 .content > section.report {
   grid-area: report;
   width: 100%;
@@ -132,7 +138,6 @@ section.report > .cards {
   grid-gap: 40px;
 }
 
-/* Section: listing */
 .content > section.listing {
   grid-area: listing;
 }
@@ -143,58 +148,35 @@ section.listing > .box {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
-/* Section: chart */
+section.listing > .box > ol > li {
+  margin: 10px 0;
+}
+
 .content > section.chart {
   grid-area: chart;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  grid-template-areas: "title" "chartContainer";
 }
-section.chart > h2 {
-  grid-area: title;
+
+.radio_button {
+  display: inline-block;
+  margin: 10px 5px 30px 5px;
 }
-section.chart > .chartContainer {
-  grid-area: chartContainer;
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-flow: column;
-  justify-content: space-between;
+.radio_button:first-of-type {
+  margin-left: 0;
 }
-section.chart > .chartContainer > .data {
-  display: grid;
-  grid-template-columns: 1fr 3fr auto;
-  grid-gap: 10px;
-  grid-template-areas: "name bar number";
+.radio_button > input[type="radio"] {
+  display: none;
 }
-section.chart > .chartContainer > .data > .name {
-  grid-area: name;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.4);
-}
-section.chart > .chartContainer > .data > .bar {
-  width: 1%;
-  transition: width 2s;
-  grid-area: bar;
+.radio_button > label {
+  padding: 10px 15px;
+  color: #b7b7b7;
+  border: 2px solid #b7b7b7;
   border-radius: 50px;
-  background: #667db6;
-  background: -webkit-linear-gradient(
-    to right,
-    #667db6,
-    #0082c8,
-    #0082c8,
-    #667db6
-  );
-  background: linear-gradient(to right, #667db6, #0082c8, #0082c8, #667db6);
+  cursor: pointer;
 }
-section.chart > .chartContainer > .data > .number {
-  grid-area: number;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.6);
+.radio_button > input[type="radio"]:checked + label {
+  color: #4481eb;
+  border: 2px solid #4481eb;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 </style>
 

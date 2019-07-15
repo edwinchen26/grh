@@ -5,6 +5,9 @@ import Home from './views/Home.vue';
 import Jobs from './views/Jobs.vue';
 import AddJob from './views/AddJob.vue';
 import EditJob from './views/EditJob.vue';
+import Teams from './views/Teams.vue';
+import AddTeam from './views/AddTeam.vue';
+import EditTeam from './views/EditTeam.vue';
 import Message from './views/Message.vue';
 
 Vue.use(Router);
@@ -30,7 +33,20 @@ export default new Router({
       props: true
     },
     {
-      path: '/message/:type/:data',
+      path: '/teams',
+      component: Teams
+    },
+    {
+      path: '/teams/add',
+      component: AddTeam
+    },
+    {
+      path: '/teams/edit/:id',
+      component: EditTeam,
+      props: true
+    },
+    {
+      path: '/message/:type/:id',
       component: Message,
       props: true
     }

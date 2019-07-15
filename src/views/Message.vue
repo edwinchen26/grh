@@ -5,7 +5,7 @@
       <span>{{ this.message }}</span>
       <div class="buttons">
         <button class="confirm" @click="goTo(destination)">Confirmar</button>
-        <span class="back" v-if="this.isDoubleCheck" @click="goTo('...')">Volver</span>
+        <span class="back" v-if="this.isDoubleCheck" @click="goTo(-1)">Volver</span>
       </div>
     </section>
   </div>
@@ -13,6 +13,8 @@
 
 <script>
 import firebase from "../firebase";
+
+const admin = require("firebase/app");
 const db = firebase.firestore();
 
 export default {
@@ -21,44 +23,70 @@ export default {
     return {
       message: "",
       isDoubleCheck: false,
-      destination: "/"
+      destination: -2,
+      data: []
     };
   },
   props: {
     type: String,
-    data: String
+    id: String
   },
   created() {
-    if (this.type == "delete" && this.data) {
-      this.message = "¿Está seguro que quiere eliminar esta información?";
+    if (this.type == "delete-job" && this.id) {
+      this.message = "¿Desea eliminar esta información?";
       this.isDoubleCheck = true;
-      this.destination = "/jobs";
+      this.$binding("data", db.collection("jobs").doc(this.id));
     }
-    if (this.type == "success" && this.data == "edit") {
+    if (this.type == "delete-team" && this.id) {
+      this.message = "¿Desea eliminar este departamento?";
+      this.isDoubleCheck = true;
+      this.$binding("data", db.collection("teams").doc(this.id));
+    }
+    if (this.type == "success" && this.id == "edit") {
       this.message = "¡Información editada con éxito!";
-      this.destination = "/jobs";
     }
-    if (this.type == "success" && this.data == "submit") {
+    if (this.type == "success" && this.id == "submit") {
       this.message = "¡Información agregada con éxito!";
-      this.destination = "/jobs";
     }
     if (this.type == "failure") {
       this.message = "Lo sentimos, hubo un error.";
-      this.destination = "...";
+      this.destination = -1;
     }
   },
   methods: {
     goTo(path) {
-      if (path == "...") {
-        this.$router.go(-1);
-      } else {
-        if (this.type == "delete" && this.data) {
+      if (path != -1) {
+        if (this.type == "delete-job" && this.id) {
+          const increment = admin.firestore.FieldValue.increment(
+            this.data.totalRemuneration
+          );
+
+          db.collection("teams")
+            .doc(this.data.team)
+            .update({ budget: increment });
+
           db.collection("jobs")
-            .doc(this.data)
+            .doc(this.id)
             .delete();
         }
-        this.$router.push({ path: path });
+        if (this.type == "delete-team" && this.id) {
+          this.$binding(
+            "reset",
+            db.collection("jobs").where("team", "==", this.id)
+          ).then(jobs => {
+            jobs.forEach(x => {
+              db.collection("jobs")
+                .doc(x.id)
+                .update({ totalRemuneration: 0 });
+            });
+          });
+
+          db.collection("teams")
+            .doc(this.id)
+            .delete();
+        }
       }
+      this.$router.go(path);
     }
   }
 };
